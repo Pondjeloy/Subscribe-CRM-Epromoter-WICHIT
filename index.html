@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>LG Subscribe CRM · WICHIT · v51</title>
+<title>LG Subscribe CRM · WICHIT · v60</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -119,93 +119,102 @@
   .summary-rank-bar { height:6px; border-radius:9999px; background:#f1f5f9; overflow:hidden; }
   .summary-rank-fill { height:100%; border-radius:9999px; background:var(--accent); transition:width .35s ease; }
 
-  /* ── Source channel cards ── */
+  /* ── Source channel cards (corporate tiles, no photos) ── */
   .source-card {
     position: relative;
-    overflow: hidden;
-    border-radius: 18px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 76px;
+    padding: 12px 14px 12px 16px;
+    border: 1px solid #e6ebf1;
+    border-radius: 12px;
     background: #fff;
-    padding-bottom: 6px;
-    transition: transform .2s ease, box-shadow .2s ease, ring-color .2s ease;
-  }
-  .source-card:hover { transform: translateY(-2px); }
-  .source-card.is-active {
-    box-shadow: 0 14px 36px rgba(200,16,46,.22);
-    transform: translateY(-2px);
-  }
-  .source-card-media {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 420 / 401;
+    cursor: pointer;
+    font-family: inherit;
     overflow: hidden;
-    border-radius: 18px;
-    background: #f1f5f9;
-  }
-  .source-card img {
-    display: block;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top center;
-  }
-  .source-card-count {
-    position: absolute;
-    right: 18px;
-    bottom: 22px;
-    left: auto;
-    z-index: 2;
-    padding: 0;
-    min-width: 0;
-    height: auto;
-    border-radius: 0;
-    background: none;
-    backdrop-filter: none;
     box-shadow: none;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 800;
-    font-size: 30px;
-    line-height: 1;
-    color: #334155;
-    text-shadow: 0 1px 0 rgba(255,255,255,.85), 0 0 10px rgba(255,255,255,.65);
-    pointer-events: none;
+    text-align: left;
+    transition: border-color .15s ease, background .15s ease;
   }
-  .source-card.is-active .source-card-count {
-    color: var(--accent);
-    background: none;
-  }
-  .source-card-check {
+  .source-card::before {
+    content: '';
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
+    left: 0; top: 10px; bottom: 10px;
+    width: 3px;
+    border-radius: 99px;
+    background: var(--card-accent, #94a3b8);
+  }
+  .source-card:hover {
+    border-color: #cfd8e3;
+    background: #fcfdfe;
+  }
+  .source-card.is-active {
+    border-color: #c8102e;
+    background: #fff8f8;
+  }
+  .source-card.is-active::before {
+    top: 0; bottom: 0; border-radius: 0;
+    background: var(--accent);
+  }
+  .source-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
     display: grid;
     place-items: center;
-    font-size: 13px;
-    font-weight: 800;
-    color: #fff;
-    background: linear-gradient(135deg, #c8102e, #e23a54);
-    box-shadow: 0 8px 20px rgba(200,16,46,.35);
+    background: var(--card-tint, #f1f5f9);
+    color: var(--card-accent, #475569);
+    flex-shrink: 0;
   }
+  .source-card-icon svg { width: 17px; height: 17px; display: block; }
+  .source-card.is-active .source-card-icon {
+    background: #fff;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  .source-card-body { flex: 1; min-width: 0; }
+  .source-card-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .source-card-count {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: -.04em;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .source-card.is-active .source-card-count { color: var(--accent); }
   .source-card-label {
     display: block;
-    margin-top: 8px;
-    padding: 0 4px 2px;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: .01em;
-    color: #334155;
-    line-height: 1.25;
-    text-align: center;
+    color: #1e293b;
+    line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
   }
-  .source-card.is-active .source-card-label {
-    color: var(--accent);
+  .source-card.is-active .source-card-label { color: var(--accent); }
+  .source-card-hint {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
   /* ── Quick View + Active filters ── */
   .qv-btn-active { background:linear-gradient(135deg,var(--accent),#e23a54); border-color:transparent!important; box-shadow:0 8px 20px rgba(200,16,46,.22); }
@@ -473,18 +482,21 @@
             <div class="text-[11px] font-bold uppercase tracking-[.14em] text-slate-400">ช่องทาง Lead / ลูกค้า</div>
             <div class="text-[11px] text-slate-400">กดเพื่อกรอง · กดซ้ำเพื่อยกเลิก</div>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
             <template x-for="sd in sourceSummary" :key="sd.key">
-              <button @click="toggleSource(sd.key)"
-                class="source-card text-left ring-1 ring-slate-200/80 hover:ring-slate-300 hover:shadow-md"
-                :class="filterSource===sd.key ? 'is-active ring-2 ring-[var(--accent)]' : ''">
-                <div class="source-card-media">
-                  <img :src="sd.img" :alt="sd.short + ' — ' + sd.label" loading="eager" decoding="async"
-                    @error="$el.style.opacity='0'"/>
-                  <span class="source-card-count tabular-nums" x-text="sd.count"></span>
-                </div>
-                <span class="source-card-label" x-text="sd.short"></span>
-                <span x-show="filterSource===sd.key" class="source-card-check">✓</span>
+              <button type="button" @click="toggleSource(sd.key)"
+                class="source-card"
+                :class="filterSource===sd.key ? 'is-active' : ''"
+                :style="'--card-accent:'+sd.accent+';--card-tint:'+sd.tint"
+                :title="sd.label">
+                <span class="source-card-icon" x-html="sourceIconSvg(sd.icon)"></span>
+                <span class="source-card-body">
+                  <span class="source-card-row">
+                    <span class="source-card-label" x-text="sd.short"></span>
+                    <span class="source-card-count" x-text="sd.count"></span>
+                  </span>
+                  <span class="source-card-hint" x-text="sd.label"></span>
+                </span>
               </button>
             </template>
           </div>
@@ -1302,7 +1314,7 @@
 </div>
 
 <script>
-const CRM_BUILD       = '3 ก.ย. 69 v51 · Meta Densu Sep';
+const CRM_BUILD       = '11 ก.ย. 69 v60 · การ์ดช่องทางทางการ';
 const CACHE_SCHEMA    = 'v23';
 const NOTE_DATE_ONLY  = false;
 const LOGIN_PASSWORD    = 'wichit1234';
@@ -1573,18 +1585,18 @@ function app() {
     ],
 
     sourceDefs: [
-      {key:'Meta Densu Sep',              short:'Meta ก.ย.', label:'Meta Densu Sep', toneClass:'tone-violet', barClass:'bg-violet-400', img:'assets/channels/meta-densu.png',
+      {key:'Meta Densu Sep',              short:'Meta ก.ย.', label:'Meta Densu Sep', toneClass:'tone-violet', barClass:'bg-violet-400', icon:'meta', accent:'#5B5FC7', tint:'#eef0ff',
         columnHelp:'A=ชำระ · C=จังหวัด · D=ที่อยู่(บ้านเดี่ยว/คอนโด) · E=สินค้า · F=วันที่ · G=ช่วงเวลา · H=ชื่อ · J=เบอร์ · N=สถานะ'},
-      {key:'Meta Densu',                  short:'Meta เก่า', label:'Meta Densu (เก่า)', toneClass:'tone-fuchsia', barClass:'bg-fuchsia-400', img:'assets/channels/meta-densu.png',
+      {key:'Meta Densu',                  short:'Meta เก่า', label:'Meta Densu (เก่า)', toneClass:'tone-fuchsia', barClass:'bg-fuchsia-400', icon:'meta', accent:'#A21CAF', tint:'#faf0ff',
         columnHelp:'ชีต legacy มิ.ย. · M=สถานะ · F=ชื่อ · I=เบอร์'},
-      {key:'Meta ITAX',                   short:'Meta ITAX', label:'Meta ITAX', toneClass:'tone-sky', barClass:'bg-sky-400', img:'assets/channels/meta-itax.png',
+      {key:'Meta ITAX',                   short:'Meta ITAX', label:'Meta ITAX', toneClass:'tone-sky', barClass:'bg-sky-400', icon:'itax', accent:'#0284C7', tint:'#e8f4fc',
         columnHelp:'A=ชำระ · C=จังหวัด · D=ที่อยู่(บ้านเดี่ยว/คอนโด) · E=สินค้า · F=วันที่ · G=เวลาติดต่อ · H=ชื่อ · I=อายุ · J=เบอร์ · K=Email · N=สถานะ · O=Epromoter'},
-      {key:'Lead Subscribe Lg.com',        short:'LG.com',  label:'Subscribe LG',  toneClass:'tone-indigo', barClass:'bg-indigo-400', img:'assets/channels/subscribe-lg.png'},
-      {key:'Lead LG Success',              short:'Success', label:'LG Success',    toneClass:'tone-emerald',barClass:'bg-emerald-500', img:'assets/channels/lg-success.png'},
-      {key:'Lead Consult',                 short:'Consult', label:'Lead Consult',  toneClass:'tone-orange', barClass:'bg-orange-400', img:'assets/channels/lead-consult.png'},
-      {key:'Lead Subscribe POP UP Braner', short:'POP UP',  label:'POP UP', toneClass:'tone-rose',   barClass:'bg-rose-400', img:'assets/channels/pop-up.png',
+      {key:'Lead Subscribe Lg.com',        short:'LG.com',  label:'Subscribe LG',  toneClass:'tone-indigo', barClass:'bg-indigo-400', icon:'web', accent:'#C8102E', tint:'#fdecee'},
+      {key:'Lead LG Success',              short:'Success', label:'LG Success',    toneClass:'tone-emerald',barClass:'bg-emerald-500', icon:'success', accent:'#047857', tint:'#e8f6f0'},
+      {key:'Lead Consult',                 short:'Consult', label:'Lead Consult',  toneClass:'tone-orange', barClass:'bg-orange-400', icon:'consult', accent:'#C2410C', tint:'#fff3ea'},
+      {key:'Lead Subscribe POP UP Braner', short:'POP UP',  label:'POP UP', toneClass:'tone-rose',   barClass:'bg-rose-400', icon:'popup', accent:'#BE123C', tint:'#fdecef',
         columnHelp:'Bannar(ก.ค.): B=ชื่อ C=เบอร์ F=Sale Consultant · Braner(เก่า): C+D=ชื่อ F=เบอร์ L=PIC'},
-      {key:'Sell out Wuttichai.P', short:'Sell out', label:'Sell out POND', toneClass:'tone-emerald', barClass:'bg-emerald-600', img:'assets/channels/sell-out.png',
+      {key:'Sell out Wuttichai.P', short:'Sell out', label:'Sell out POND', toneClass:'tone-emerald', barClass:'bg-emerald-600', icon:'sellout', accent:'#0F766E', tint:'#e7f5f3',
         columnHelp:'A=No. · B=Date · C=OP · D=Category · E=Model · F=Qty · G=Amount · H=Policy · I=ติดตั้ง · J=ลูกค้า · K=เบอร์ · L=จังหวัด · N=Remark'},
     ],
 
@@ -2191,6 +2203,20 @@ function app() {
     srcToneClass(src) { const d=this.sourceDefs.find(s=>s.key===normalizeSource(src)); return d?d.toneClass:'tone-slate'; },
     srcShort(src)     { const d=this.sourceDefs.find(s=>s.key===normalizeSource(src)); return d?d.short:normalizeSource(src)||src; },
     srcLabel(src)     { const d=this.sourceDefs.find(s=>s.key===normalizeSource(src)); return d?d.label:normalizeSource(src)||src; },
+    sourceIconSvg(icon) {
+      const stroke = 'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"';
+      const icons = {
+        meta:    `<svg viewBox="0 0 24 24" ${stroke}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 13h4M8 16h8"/></svg>`,
+        itax:    `<svg viewBox="0 0 24 24" ${stroke}><path d="M8 3h6l5 5v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16h5"/></svg>`,
+        web:     `<svg viewBox="0 0 24 24" ${stroke}><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 3.2 3.8 6.2 3.8 9S14.5 17.8 12 21c-2.5-3.2-3.8-6.2-3.8-9S9.5 6.2 12 3z"/></svg>`,
+        success: `<svg viewBox="0 0 24 24" ${stroke}><path d="M8 20h8"/><path d="M12 16v4"/><path d="M7 9a5 5 0 0 0 10 0V5H7v4z"/><path d="M7 8H5a3 3 0 0 0 3 3M17 8h2a3 3 0 0 1-3 3"/></svg>`,
+        consult: `<svg viewBox="0 0 24 24" ${stroke}><path d="M5 5h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M18 10h1a2 2 0 0 1 2 2v5h-1l-3 2v-2h-2"/></svg>`,
+        popup:   `<svg viewBox="0 0 24 24" ${stroke}><path d="M4 11v2a1 1 0 0 0 1 1h1v6h4v-4h4v4h4v-6h1a1 1 0 0 0 1-1v-2"/><path d="M3 11l9-8 9 8"/></svg>`,
+        sellout: `<svg viewBox="0 0 24 24" ${stroke}><path d="M9 12l2 2 4-4"/><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`,
+      };
+      return icons[icon] || icons.web;
+    },
+
     paymentStyle(val) {
       if (!val) return '';
       const v = val.toLowerCase();

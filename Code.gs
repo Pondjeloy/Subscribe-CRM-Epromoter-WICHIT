@@ -48,10 +48,15 @@
 //  M=E-Promoter (WUTTICHAI.P) N=Remark
 //  ไม่มีคอลัมน์ Status — ตั้ง Purchased อัตโนมัติ (ยกเลิก/ปฏิเสธเครดิตแยกสถานะ)
 //  ดึงเฉพาะ promoter=POND (กัน CRM WUTTICHAI N. ดึงชีตนี้)
+//
+//  [ลงยอดขาย] action=addSellout · POND เท่านั้น · เขียนตั้งแต่แถว 153 ไล่ลง
+//  No. เริ่มที่ 1 จากแถว 153 · Remark ว่างถ้าไม่ได้กรอก · ก๊อปฟอร์แมตแถว 152
+//  กัน OP ซ้ำ · ต้อง Redeploy Web App หลังอัป Code.gs
 // ════════════════════════════════════════════════════════
 
 var SPREADSHEET_ID = '1EUfdN0N05b-R2sAWgCraTxkMtyfvQEAqUNbNUZ9D7ps'; // ก.ย. 2569
 var PROMOTER       = 'POND';
+var SELLOUT_START_ROW = 153; // ลงยอดขายเริ่มแถวนี้ ไล่ลง · No. เริ่ม 1
 
 // ชื่อ canonical ใน CRM (1 การ์ด POP UP) — resolveSheet หาแท็บจริงให้
 var SHEET_NAMES = [
@@ -139,6 +144,7 @@ function doGet(e) {
       case 'appendNote':    result = appendNote(p.sheet, parseInt(p.row,10), p.note||''); break;
       case 'updateNotes':   result = updateNotes(p.sheet, parseInt(p.row,10), p.notes||''); break;
       case 'setNoteHighlight': result = setNoteHighlight(p.sheet, parseInt(p.row,10), parseInt(p.level||'0',10)); break;
+      case 'addSellout':    result = addSellout(p, promoter); break;
       default:              result = { success:false, error:'Unknown action: '+action };
     }
   } catch(err) {
@@ -799,6 +805,153 @@ function checkRows(sheetName, n, promoter) {
            picColumn:colLetter(cfg.picCol), detect:cfg.detect||null, rows:rows };
 }
 
+// ── ลงยอดขาย Sell out Wuttichai.P (POND เท่านั้น) ──────
+// A=No. B=Date C=OP D=Category E=Model F=Qty G=Amount
+// H=Policy I=Install J=Customer K=tel L=Province M=E-Promoter N=Remark
+function addSellout(p, promoter) {
+  p = p || {};
+  if (normalizeKey(promoter || PROMOTER) !== 'POND') {
+    return { success:false, error:'ลงยอดขายชีต Sell out ใช้ได้เฉพาะ POND' };
+  }
+  var opened = openSheetWithConfig('Sell out Wuttichai.P', 'POND');
+  if (!opened || !opened.ok) {
+    return { success:false, error:(opened && opened.error) || 'ไม่พบชีต Sell out Wuttichai.P' };
+  }
+  var sheet = opened.sheet;
+  var name = withKhun(p.name || p.customer);
+  var phone = clean(p.phone || p.tel);
+  var op = clean(p.op || p.orderNo);
+  if (!name && !phone && !op) {
+    return { success:false, error:'ต้องมีอย่างน้อย ชื่อ หรือเบอร์ หรือ OP' };
+  }
+  var lastCol = 14; // A–N
+  var start = SELLOUT_START_ROW; // 153 — ห้ามต่อท้าย getLastRow()
+  var lastScan = Math.max(sheet.getLastRow(), start);
+  if (lastScan >= 2) {
+    var existing = sheet.getRange(2, 1, lastScan - 1, lastCol).getValues();
+    for (var i = 0; i < existing.length; i++) {
+      if (!selloutRowHas(existing[i])) continue;
+      if (op && clean(existing[i][2]) === op) {
+        var sheetRow = i + 2;
+        return {
+          success:false, duplicate:true, row:sheetRow, op:op,
+          error:'มี OP นี้แล้วที่แถว ' + sheetRow + ' (' + clean(existing[i][9]) + ')'
+        };
+      }
+    }
+  }
+  // แถวว่างช่องแรกตั้งแต่ 153 — ไม่กระโดดไปแถวท้ายชีต (เช่น 204)
+  var destRow = start;
+  var filledFromStart = 0;
+  var look = Math.max(lastScan, start);
+  var blockLen = look - start + 1;
+  var block = sheet.getRange(start, 1, blockLen, lastCol).getValues();
+  var foundGap = false;
+  for (var b = 0; b < block.length; b++) {
+    if (!selloutRowHas(block[b])) {
+      destRow = start + b;
+      foundGap = true;
+      break;
+    }
+    filledFromStart++;
+  }
+  if (!foundGap) destRow = start + block.length;
+  var nextNo = filledFromStart + 1; // 153 ว่าง = No.1
+  var remark = clean(p.remark || p.notes); // ว่างได้ — ไม่ใส่ให้อัตโนมัติ
+  var values = [[
+    nextNo,
+    toSelloutDate(p.sellDate),
+    op,
+    mapSelloutCategory(clean(p.category) + ' ' + clean(p.model)),
+    clean(p.model),
+    toSelloutNum(p.quantity || p.qty) || 1,
+    toSelloutNum(p.amount),
+    clean(p.policy || p.policyName),
+    toSelloutDate(p.installDate || p.install),
+    name,
+    phone,
+    clean(p.province),
+    'WUTTICHAI.P',
+    remark
+  ]];
+  var dest = sheet.getRange(destRow, 1, 1, lastCol);
+  var formatRow = destRow > start ? destRow - 1 : (start - 1);
+  if (formatRow >= 2) sheet.setRowHeight(destRow, sheet.getRowHeight(formatRow));
+  dest.setValues(values);
+  dest.setFontFamily('Arial');
+  dest.setFontSize(11);
+  dest.setFontWeight('normal');
+  dest.setFontStyle('normal');
+  dest.setFontColor(null);
+  dest.setBackground(null);
+  dest.setHorizontalAlignment('left');
+  dest.setVerticalAlignment('middle');
+  return {
+    success:true,
+    sheet: opened.name,
+    row: destRow,
+    no: nextNo,
+    op: op,
+    name: name
+  };
+}
+
+function mapSelloutCategory(s) {
+  var u = String(s || '').toUpperCase();
+  var raw = String(s || '').replace(/_OS/g, '').replace(/\s+/g, ' ').trim();
+  if (/STANBY|STANDBY|LIFE\s*STYLE|LIFESTYLE|27LX|สแตนบาย/.test(u)) return 'สแตนบายมี';
+  if (/\bMNT\b|MONITOR|มอนิเตอร์|จอมอนิเตอร์/.test(u)) return 'จอมอนิเตอร์';
+  if (/FREEZER|ตู้แช่แข็ง/.test(u)) return 'ตู้แช่แข็ง';
+  if (/\bAV\b|SOUND\s*BAR|SPEAKER|HOME AUDIO|XBOOM|BOUNCE|ซาวด์บาร์|ลำโพง/.test(u)) return 'ซาวด์บาร์ลำโพง';
+  if (/\bACC\b|VACUUM|A9T|ดูดฝุ่น/.test(u)) return 'เครื่องดูดฝุ่น';
+  if (/DEHUMID|ลดความชื้น/.test(u)) return 'เครื่องลดความชื้น';
+  if (/\bAP\b|PURIFIER|ฟอกอากาศ|เครื่องฟอก|AEROHIT|AEROMINI/.test(u)) return 'เครื่องฟอก';
+  if (/\bMWO\b|MICROWAVE|ไมโครเวฟ/.test(u)) return 'ไมโครเวฟ';
+  if (/\bWP\b|WATER|กรองน้ำ/.test(u)) return 'เครื่องกรองน้ำ';
+  if (/\bRAC\b|แอร์ติดผนัง|ARTCOOL/.test(u)) return 'แอร์ติดผนัง';
+  if (/STYLER|ตู้ถนอมผ้า/.test(u)) return 'ตู้ถนอมผ้า';
+  if (/\bWM\b|WASHER|WASH|ซักผ้า/.test(u)) return 'เครื่องซักผ้า';
+  if (/\bREF\b|REFRIGERATOR|ตู้เย็น|MULTI-?DOOR|SIDE.?BY.?SIDE/.test(u)) return 'ตู้เย็น';
+  if (/\bTV\b|OLED|QNED|NANO|ทีวี|โทรทัศน์/.test(u)) return 'ทีวี';
+  return raw;
+}
+
+function withKhun(name) {
+  name = clean(name);
+  if (!name) return '';
+  name = name.replace(/^คุณ\s*/, '');
+  return 'คุณ ' + name;
+}
+
+function selloutRowHas(row) {
+  if (!row) return false;
+  for (var c = 0; c < row.length; c++) {
+    var v = row[c];
+    if (v === '' || v === null) continue;
+    if (typeof v === 'string' && v.replace(/\s+/g, '') === '') continue;
+    return true;
+  }
+  return false;
+}
+
+function toSelloutDate(s) {
+  s = clean(s);
+  if (!s) return '';
+  var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if (!m) return s;
+  var d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+  if (y < 100) y += 2000;
+  if (y > 2400) y -= 543;
+  return new Date(y, mo - 1, d);
+}
+
+function toSelloutNum(s) {
+  s = clean(s).replace(/,/g, '');
+  if (!s) return '';
+  var n = parseFloat(s);
+  return isNaN(n) ? s : n;
+}
+
 // ── Helpers ─────────────────────────────────────────────
 function clean(v) {
   if (v===null||v===undefined) return '';
@@ -815,7 +968,13 @@ function normalizeKey(v) {
 }
 
 function isPromoter(v, promoter) {
-  return normalizeKey(v).indexOf(normalizeKey(promoter || PROMOTER)) !== -1;
+  var want = normalizeKey(promoter || PROMOTER);
+  var key  = normalizeKey(v);
+  if (!key || !want) return false;
+  if (key.indexOf(want) !== -1) return true;
+  if (want === 'PAIRAT' && key.indexOf('PIRAT') !== -1) return true;
+  if (want === 'PIRAT' && key.indexOf('PAIRAT') !== -1) return true;
+  return false;
 }
 
 // ชีต Sell out Wuttichai.P — คอลัมน์ M เขียน WUTTICHAI.P ไม่ใช่ POND
