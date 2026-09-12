@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>LG Subscribe CRM · WICHIT · v60</title>
+<title>LG Subscribe CRM · WICHIT · v71</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -114,6 +114,32 @@
     transition:all .15s; white-space:nowrap;
   }
   .filter-chip-count { font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:700; padding:0 .375rem; border-radius:9999px; }
+
+  /* ── Filter rail (left tabs) ── */
+  .crm-list-layout { display:grid; grid-template-columns:248px minmax(0,1fr); gap:16px; align-items:start; }
+  .filter-rail { position:sticky; top:68px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; }
+  .filter-rail-head { padding:12px 14px 8px; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#94a3b8; }
+  .filter-rail-tabs { display:flex; flex-direction:column; padding:0 8px 8px; gap:2px; }
+  .filter-rail-tab { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; border:0; background:transparent; text-align:left; font-family:inherit; font-size:13px; font-weight:600; color:#64748b; padding:8px 10px; border-radius:10px; cursor:pointer; }
+  .filter-rail-tab:hover { background:#f8fafc; color:#334155; }
+  .filter-rail-tab.is-active { background:var(--accent-tint); color:#111; }
+  .filter-rail-tab.is-active { box-shadow:inset 3px 0 0 var(--accent); }
+  .filter-rail-dot { width:7px; height:7px; border-radius:99px; background:var(--accent); flex-shrink:0; }
+  .filter-rail-panel { border-top:1px solid #f1f5f9; padding:10px 10px 12px; }
+  .filter-rail-panel .filter-chips { flex-direction:column; align-items:stretch; flex-wrap:nowrap; gap:6px; max-height:min(52vh, 420px); overflow-y:auto; }
+  .filter-rail-panel .filter-slot, .filter-rail-panel .filter-slot-1, .filter-rail-panel .filter-slot-2 { width:100%; }
+  .filter-rail-panel .filter-chip { width:100%; justify-content:space-between; border-radius:10px; height:auto; min-height:2.25rem; }
+  .filter-rail-empty { font-size:12px; color:#94a3b8; padding:8px 4px; }
+  @media (max-width:900px) {
+    .crm-list-layout { grid-template-columns:1fr; }
+    .filter-rail { position:static; }
+    .filter-rail-tabs { flex-direction:row; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:0 8px 8px; }
+    .filter-rail-tab { flex:0 0 auto; white-space:nowrap; box-shadow:none; }
+    .filter-rail-tab.is-active { box-shadow:inset 0 -3px 0 var(--accent); }
+    .filter-rail-panel .filter-chips { flex-direction:row; flex-wrap:wrap; max-height:none; }
+    .filter-rail-panel .filter-slot, .filter-rail-panel .filter-slot-1, .filter-rail-panel .filter-slot-2 { width:auto; }
+    .filter-rail-panel .filter-chip { width:auto; }
+  }
 
   /* ── Work summary ── */
   .summary-rank-bar { height:6px; border-radius:9999px; background:#f1f5f9; overflow:hidden; }
@@ -352,6 +378,85 @@
   </div>
 </div>
 
+<!-- ═══ SELLOUT FROM OSMS SCREENSHOT ═══ -->
+<div class="modal-overlay" x-show="selloutModal" x-transition style="display:none" @click.self="closeSelloutModal()" @paste="onSelloutPaste($event)">
+  <div class="bg-white rounded-2xl p-6 max-w-[560px] w-full shadow-2xl max-h-[92vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="font-display font-bold text-[18px]">ลงยอดขาย · Sell out POND</div>
+        <div class="text-[13px] text-slate-500 mt-0.5">ก็อปสกรีน OSMS แล้วกด Ctrl+V — ลงชีตตั้งแต่แถว 153 · No. เริ่ม 1 · Remark กรอกเอง</div>
+      </div>
+      <button @click="closeSelloutModal()" class="h-9 w-9 grid place-items-center rounded-xl text-slate-400 hover:bg-slate-100 transition text-xl">×</button>
+    </div>
+    <div class="rounded-xl ring-1 ring-dashed ring-emerald-300 bg-emerald-50/70 px-4 py-4 text-center mb-3 outline-none"
+      tabindex="0"
+      x-ref="selloutPasteBox"
+      @paste.prevent="onSelloutPaste($event)"
+      @dragover.prevent
+      @drop.prevent="onSelloutDrop($event)">
+      <div class="text-[13px] font-semibold text-emerald-800">ก็อปรูป แล้วกด Ctrl+V ที่นี่</div>
+      <div class="text-[12px] text-emerald-700/80 mt-0.5" x-text="selloutFileName || 'Win+Shift+S หรือก็อปจาก LINE แล้ววาง · ลากวางได้'"></div>
+      <label class="mt-2 inline-block text-[12px] font-semibold text-slate-500 hover:underline cursor-pointer">
+        <input type="file" accept="image/*" class="hidden" @change="onSelloutFile($event)"/>
+        หรือเลือกไฟล์ (ถ้าเครื่องอนุญาต)
+      </label>
+    </div>
+    <div x-show="selloutPreview" class="mb-3 rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-50 max-h-40">
+      <img :src="selloutPreview" alt="preview" class="w-full max-h-40 object-contain"/>
+    </div>
+    <div x-show="selloutOcrMsg" class="mb-3 text-[13px]" :class="selloutOcrOk ? 'text-emerald-700' : 'text-slate-500'" x-text="selloutOcrMsg"></div>
+    <div x-show="selloutOcrText && !selloutForm.policy" class="mb-3 text-[12px] text-amber-700">Policy ว่าง — ไม่เจอข้อความต่อจาก «นโยบายการกำหนดราคา» ในรูป</div>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="col-span-2 text-[12px] font-bold text-slate-500">ชื่อลูกค้า
+        <input x-model="selloutForm.name" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800" placeholder="ชื่อ-นามสกุล"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">เบอร์
+        <input x-model="selloutForm.phone" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800" placeholder="ไม่บังคับ"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">จังหวัด
+        <input x-model="selloutForm.province" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">OP / รหัสสัญญา
+        <input x-model="selloutForm.op" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] font-mono text-slate-800"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">วันที่ขาย
+        <input x-model="selloutForm.sellDate" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800" placeholder="30/08/2026"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">วันติดตั้ง
+        <input x-model="selloutForm.installDate" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800" placeholder="01/09/2026"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">หมวด
+        <input x-model="selloutForm.category" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800"/>
+      </label>
+      <label class="col-span-2 text-[12px] font-bold text-slate-500">รุ่น
+        <input x-model="selloutForm.model" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">จำนวน
+        <input x-model="selloutForm.quantity" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800"/>
+      </label>
+      <label class="text-[12px] font-bold text-slate-500">ค่าเช่า / เดือน
+        <input x-model="selloutForm.amount" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[14px] text-slate-800"/>
+      </label>
+      <label class="col-span-2 text-[12px] font-bold text-slate-500">Policy
+        <input x-model="selloutForm.policy" class="mt-1 w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-200 text-[13px] font-mono text-slate-800"/>
+      </label>
+      <label class="col-span-2 text-[12px] font-bold text-slate-500">Remark <span class="font-medium text-slate-400">เว้นว่างได้ — กรอกเอง</span>
+        <textarea x-model="selloutForm.remark" rows="2" class="mt-1 w-full px-3 py-2 rounded-xl bg-white ring-1 ring-slate-200 text-[13px] text-slate-800" placeholder="ไม่ระบุจากรูป จะกรอกเองในชีต"></textarea>
+      </label>
+    </div>
+    <div x-show="selloutErr" class="mt-3 text-[13px] text-rose-600" x-text="selloutErr"></div>
+    <div x-show="selloutOkMsg" class="mt-3 text-[13px] text-emerald-700" x-text="selloutOkMsg"></div>
+    <div class="flex gap-3 mt-5">
+      <button class="flex-1 h-11 rounded-xl text-[14px] font-bold text-white disabled:opacity-50" style="background:var(--accent)"
+        :disabled="selloutSaving" @click="saveSellout()">
+        <span x-show="!selloutSaving">บันทึกลงชีต Sell out</span>
+        <span x-show="selloutSaving">กำลังบันทึก...</span>
+      </button>
+      <button class="h-11 px-5 rounded-xl text-[14px] font-semibold text-slate-600 bg-white ring-1 ring-slate-200" @click="closeSelloutModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ HEADER ═══ -->
 <header x-show="isLoggedIn" x-cloak class="sticky top-0 z-50" style="backdrop-filter:blur(10px)">
   <nav class="navbar">
@@ -503,7 +608,11 @@
           <!-- Sell out column legend -->
           <div x-show="isSelloutFilterActive()"
             class="mt-3 rounded-xl bg-emerald-50 ring-1 ring-emerald-200/80 px-4 py-3 text-[12px] text-emerald-900 leading-relaxed">
-            <div class="font-bold text-[11px] uppercase tracking-[.1em] text-emerald-700 mb-2">ฐานลูกค้า Sell out Wuttichai.P (POND)</div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="font-bold text-[11px] uppercase tracking-[.1em] text-emerald-700">ฐานลูกค้า Sell out Wuttichai.P (POND)</div>
+              <button x-show="isPondCrm()" type="button" @click="openSelloutModal()"
+                class="h-8 px-3 rounded-full text-[12px] font-semibold text-white" style="background:var(--accent)">+ ลงยอดขายจากรูป</button>
+            </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-1">
               <template x-for="item in selloutColumnLegend" :key="item.col">
                 <div><span class="font-bold tabular-nums" x-text="item.col"></span> = <span x-text="item.label"></span></div>
@@ -630,13 +739,36 @@
       </section>
 
       <!-- ── List View ── -->
-      <div class="space-y-4">
+      <div class="crm-list-layout">
 
-        <!-- Status chips -->
-        <section class="space-y-3">
-          <div class="filter-row chips-scroll">
-            <span class="filter-row-label">Status</span>
-            <div class="filter-chips chips-scroll">
+        <aside class="filter-rail">
+          <div class="filter-rail-head">ตัวกรอง</div>
+          <nav class="filter-rail-tabs" aria-label="ตัวกรองรายชื่อ">
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='status' }" @click="setFilterRailTab('status')">
+              <span>Status</span><span class="filter-rail-dot" x-show="filterRailOn('status')" x-cloak></span>
+            </button>
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='payment' }" @click="setFilterRailTab('payment')">
+              <span>ชำระเงิน</span><span class="filter-rail-dot" x-show="filterRailOn('payment')" x-cloak></span>
+            </button>
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='hl' }" @click="setFilterRailTab('hl')">
+              <span>ไฮไลท์รายชื่อ</span><span class="filter-rail-dot" x-show="filterRailOn('hl')" x-cloak></span>
+            </button>
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='activity' }" @click="setFilterRailTab('activity')">
+              <span>บันทึกหมายเหตุ</span><span class="filter-rail-dot" x-show="filterRailOn('activity')" x-cloak></span>
+            </button>
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='convenientDate' }" @click="setFilterRailTab('convenientDate')">
+              <span>วันที่สะดวก</span><span class="filter-rail-dot" x-show="filterRailOn('convenientDate')" x-cloak></span>
+            </button>
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='housing' }" @click="setFilterRailTab('housing')">
+              <span>ที่อยู่</span><span class="filter-rail-dot" x-show="filterRailOn('housing')" x-cloak></span>
+            </button>
+            <button type="button" class="filter-rail-tab" :class="{ 'is-active': filterRailTab==='contactTime' }" @click="setFilterRailTab('contactTime')">
+              <span>ช่วงเวลา</span><span class="filter-rail-dot" x-show="filterRailOn('contactTime')" x-cloak></span>
+            </button>
+          </nav>
+
+          <div class="filter-rail-panel">
+          <div class="filter-chips" x-show="filterRailTab==='status'">
               <div class="filter-slot filter-slot-1">
                 <button @click="setFilterStatus('')"
                   class="filter-chip"
@@ -671,12 +803,8 @@
                 </button>
               </template>
             </div>
-          </div>
 
-          <!-- Payment chips -->
-          <div class="filter-row chips-scroll">
-            <span class="filter-row-label">ชำระเงิน</span>
-            <div class="filter-chips chips-scroll">
+          <div class="filter-chips" x-show="filterRailTab==='payment'" x-cloak>
               <div class="filter-slot filter-slot-1">
                 <button @click="setFilterPayment('')"
                   class="filter-chip"
@@ -715,12 +843,8 @@
                 </button>
               </template>
             </div>
-          </div>
 
-          <!-- Highlight chips -->
-          <div class="filter-row chips-scroll">
-            <span class="filter-row-label">ไฮไลท์ รายชื่อ</span>
-            <div class="filter-chips chips-scroll">
+          <div class="filter-chips" x-show="filterRailTab==='hl'" x-cloak>
               <div class="filter-slot filter-slot-1">
                 <button @click="setFilterHL(null)"
                   class="filter-chip"
@@ -761,12 +885,15 @@
                 </button>
               </template>
             </div>
-          </div>
 
-          <!-- Activity chips -->
-          <div class="filter-row chips-scroll">
-            <span class="filter-row-label">บันทึกหมายเหตุ</span>
-            <div class="filter-chips chips-scroll">
+          <div class="filter-chips" x-show="filterRailTab==='activity'" x-cloak>
+              <button @click="setFilterActivity('')"
+                class="filter-chip"
+                :class="filterActivity==='' ? 'text-white shadow-sm' : 'text-slate-600 bg-white ring-1 ring-slate-200 hover:ring-slate-300 hover:bg-slate-50'"
+                :style="filterActivity==='' ? 'background:var(--accent)' : ''">
+                ทั้งหมด
+                <span class="filter-chip-count" :class="filterActivity==='' ? 'bg-white/20' : 'text-slate-400 bg-slate-100'" x-text="customers.length"></span>
+              </button>
               <template x-for="a in activityFilters" :key="a.key">
                 <button @click="setFilterActivity(a.key)"
                   class="filter-chip"
@@ -780,12 +907,8 @@
                 </button>
               </template>
             </div>
-          </div>
 
-          <!-- วันที่สะดวก (Meta Densu July · F) -->
-          <div class="filter-row chips-scroll" x-show="convenientDateOptions.length" x-cloak>
-            <span class="filter-row-label">วันที่สะดวก</span>
-            <div class="filter-chips chips-scroll">
+          <div class="filter-chips" x-show="filterRailTab==='convenientDate'" x-cloak>
               <div class="filter-slot filter-slot-1">
                 <button @click="setFilterConvenientDate('')"
                   class="filter-chip"
@@ -809,12 +932,8 @@
                 </button>
               </template>
             </div>
-          </div>
 
-          <!-- ประเภทที่อยู่ (Meta · บ้านเดี่ยว / คอนโด) -->
-          <div class="filter-row chips-scroll" x-show="housingOptions.length" x-cloak>
-            <span class="filter-row-label">ที่อยู่</span>
-            <div class="filter-chips chips-scroll">
+          <div class="filter-chips" x-show="filterRailTab==='housing'" x-cloak>
               <div class="filter-slot filter-slot-1">
                 <button @click="setFilterHousing('')"
                   class="filter-chip"
@@ -838,12 +957,8 @@
                 </button>
               </template>
             </div>
-          </div>
 
-          <!-- ช่วงเวลาติดต่อ (Meta Densu July · G) -->
-          <div class="filter-row chips-scroll" x-show="contactTimeOptions.length" x-cloak>
-            <span class="filter-row-label">ช่วงเวลา</span>
-            <div class="filter-chips chips-scroll">
+          <div class="filter-chips" x-show="filterRailTab==='contactTime'" x-cloak>
               <div class="filter-slot filter-slot-1">
                 <button @click="setFilterContactTime('')"
                   class="filter-chip"
@@ -867,9 +982,13 @@
                 </button>
               </template>
             </div>
+            <div class="filter-rail-empty" x-show="filterRailTab==='convenientDate' && !convenientDateOptions.length" x-cloak>ไม่มีวันที่สะดวกในชุดนี้</div>
+            <div class="filter-rail-empty" x-show="filterRailTab==='housing' && !housingOptions.length" x-cloak>ไม่มีประเภทที่อยู่ในชุดนี้</div>
+            <div class="filter-rail-empty" x-show="filterRailTab==='contactTime' && !contactTimeOptions.length" x-cloak>ไม่มีช่วงเวลาในชุดนี้</div>
           </div>
-        </section>
+        </aside>
 
+        <div class="crm-list-main space-y-4">
         <!-- Search row -->
         <div class="flex items-center gap-3">
           <div class="relative flex-1">
@@ -884,6 +1003,12 @@
             class="h-11 px-3.5 rounded-xl text-[13px] font-medium text-slate-500 bg-white ring-1 ring-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5 transition">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             ล้าง
+          </button>
+          <button x-show="isPondCrm()" type="button" @click="openSelloutModal()"
+            class="h-11 px-3.5 rounded-xl text-[13px] font-semibold text-white inline-flex items-center gap-1.5 transition"
+            style="background:var(--accent)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            ลงยอดขาย
           </button>
           <button @click="exportCSV()"
             class="h-11 px-3.5 rounded-xl text-[13px] font-semibold text-slate-600 bg-white ring-1 ring-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5 transition">
@@ -935,7 +1060,7 @@
                     </span>
                   </th>
                   <th class="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-slate-400">เบอร์โทร</th>
-                  <th class="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-slate-400 cursor-pointer select-none" @click="setSort('productType')">สินค้า</th>
+                  <th class="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-slate-400 w-[9.5rem] max-w-[9.5rem] cursor-pointer select-none" @click="setSort('productType')">สินค้า</th>
                   <th class="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-slate-400">ชำระเงิน</th>
                   <th class="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-slate-400 cursor-pointer select-none" @click="setSort('status')">
                     <span class="inline-flex items-center gap-1">Status
@@ -996,7 +1121,9 @@
                     <td class="px-3 whitespace-nowrap">
                       <span class="font-semibold text-slate-800 tabular-nums tracking-tight text-[13.5px]" x-text="fmtPhone(c.phone)"></span>
                     </td>
-                    <td class="px-3 text-[13px] text-slate-600 whitespace-nowrap" x-text="c.productType||'—'"></td>
+                    <td class="px-3 text-[13px] text-slate-600 w-[9.5rem] max-w-[9.5rem]">
+                      <div class="truncate" :title="c.productType||''" x-text="c.productType||'—'"></div>
+                    </td>
                     <td class="px-3">
                       <span x-show="c.paymentChannel" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-semibold" :style="paymentStyle(c.paymentChannel)" x-text="c.paymentChannel"></span>
                       <span x-show="!c.paymentChannel" class="text-[12px] text-slate-400">—</span>
@@ -1099,6 +1226,7 @@
           </div>
         </div>
 
+        </div><!-- /crm-list-main -->
       </div><!-- /list -->
     </div><!-- /!loading -->
   </div><!-- /apiUrl -->
@@ -1314,14 +1442,14 @@
 </div>
 
 <script>
-const CRM_BUILD       = '11 ก.ย. 69 v60 · การ์ดช่องทางทางการ';
+const CRM_BUILD       = '12 ก.ย. 69 v71 · ย่อชื่อสินค้าในตาราง';
 const CACHE_SCHEMA    = 'v23';
 const NOTE_DATE_ONLY  = false;
 const LOGIN_PASSWORD    = 'wichit1234';
 const LOGIN_SESSION_KEY = 'lgCrmLoggedIn_wichit';
 const API_URL_KEY       = 'lgCrmApiUrl_wichit';
-const CACHE_KEY         = 'lgCrmCache_wichit_v13';
-const CACHE_VER_KEY     = 'lgCrmCacheSchema_wichit';
+const CACHE_KEY         = 'lgCrmCache_wichit_v14';
+const CACHE_VER_KEY     = 'lgCrmCacheSchema';
 // เขียน: รอแค่ชีตหลัก · alt ยิงเบื้องหลัง · เน็ต/timeout/script error = soft-ok (ไม่โชว์ error แดง)
 const WRITE_TIMEOUT_MS  = 60000;
 const NOTES_LOAD_MS     = 25000;
@@ -1407,7 +1535,7 @@ function dedupeCustomersByPhone(list) {
   let id = 1;
   return dedupeMetaOnly(meta).concat(rest).map(c => ({...c, id: id++}));
 }
-const HL_KEY            = 'lgCrmHL_wichit';
+const HL_KEY            = 'lgDashHL_wichit';
 const PROMOTER          = 'WICHIT';
 const CACHE_TTL         = 30 * 60 * 1000; // 30 min
 
@@ -1434,6 +1562,7 @@ function app() {
     /* ── Filters ── */
     search: '', filterSource: '', filterStatus: '', filterStatusGroup: null, filterPayment: '', filterActivity: '', filterHL: null,
     filterConvenientDate: '', filterContactTime: '', filterHousing: '',
+    filterRailTab: (function () { try { return localStorage.getItem('lgCrmRailTab') || 'status'; } catch (e) { return 'status'; } })(),
     activeQuickView: '',
     sortCol: 'lastNote', sortDir: 'desc', page: 1, pageSize: 25,
     _frozenRows: null,
@@ -1446,6 +1575,12 @@ function app() {
 
     /* ── Follow-up modal ── */
     fuModal: false, fuDateTime: '', fuErr: '', _pendingFuActivity: null,
+
+    /* ── ลงยอดขาย OSMS ── */
+    selloutModal: false, selloutSaving: false, selloutErr: '', selloutOkMsg: '',
+    selloutFileName: '', selloutPreview: '', selloutOcrMsg: '', selloutOcrOk: false,
+    selloutOcrText: '',
+    selloutForm: emptySelloutForm(),
 
     /* ── Activity picker ── */
     selectedActivity: '',
@@ -1613,6 +1748,7 @@ function app() {
         this.fetchData({ soft: had });
       }
       document.addEventListener('keydown', e => { if (e.key === 'Escape') this.closeDrawer(); });
+      document.addEventListener('paste', e => { if (this.selloutModal) this.onSelloutPaste(e); });
     },
 
     /* ── Auth ── */
@@ -1970,6 +2106,20 @@ function app() {
     },
     toggleSource(key)      { this._frozenRows=null; this._resetQuickView(); this.filterSource = this.filterSource===key ? '' : key; this.showMetaLegend = this.isMetaFilterActive(); this.page=1; },
     clearFilters()         { this._frozenRows=null; this.search=''; this.filterSource=''; this.filterStatus=''; this.filterStatusGroup=null; this.filterPayment=''; this.filterActivity=''; this.filterHL=null; this.filterConvenientDate=''; this.filterContactTime=''; this.filterHousing=''; this.activeQuickView=''; this.showMetaLegend=false; this.page=1; },
+    setFilterRailTab(id) {
+      this.filterRailTab = id;
+      try { localStorage.setItem('lgCrmRailTab', id); } catch (e) {}
+    },
+    filterRailOn(id) {
+      if (id === 'status') return !!(this.filterStatus || this.filterStatusGroup?.length);
+      if (id === 'payment') return !!this.filterPayment;
+      if (id === 'hl') return this.filterHL !== null;
+      if (id === 'activity') return !!this.filterActivity;
+      if (id === 'convenientDate') return !!this.filterConvenientDate;
+      if (id === 'housing') return !!this.filterHousing;
+      if (id === 'contactTime') return !!this.filterContactTime;
+      return false;
+    },
     setFilterStatus(val)   { this._frozenRows=null; this._resetQuickView(); this.filterStatus = this.filterStatus===val ? '' : val; this.page=1; },
     setFilterPayment(key)  { this._frozenRows=null; this._resetQuickView(); this.filterPayment = this.filterPayment===key ? '' : key; this.page=1; },
     setFilterActivity(key) { this._frozenRows=null; this._resetQuickView(); this.filterActivity = this.filterActivity===key ? '' : key; this.page=1; },
@@ -2165,8 +2315,112 @@ function app() {
       return {'':'— ยังไม่ระบุ','Called':'Called','Follow up':'Follow up','Unqualified':'Unqualified',
               'Called buy denied':'Called but denied','No Credit Card':'No Credit Card','Purchased':'Purchased'}[s] ?? (s||'— ยังไม่ระบุ');
     },
+    isPondCrm() {
+      return PROMOTER === 'POND';
+    },
     isSelloutSource(src) {
       return normalizeSource(src) === 'Sell out Wuttichai.P';
+    },
+    openSelloutModal() {
+      this.selloutModal = true;
+      this.selloutErr = '';
+      this.selloutOkMsg = '';
+      this.selloutOcrMsg = '';
+      this.selloutOcrOk = false;
+      this.selloutOcrText = '';
+      this.selloutFileName = '';
+      this.selloutPreview = '';
+      this.selloutForm = emptySelloutForm();
+      this.$nextTick(() => { try { this.$refs.selloutPasteBox && this.$refs.selloutPasteBox.focus(); } catch {} });
+    },
+    closeSelloutModal() {
+      if (this.selloutSaving) return;
+      this.selloutModal = false;
+    },
+    onSelloutFile(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      ev.target.value = '';
+      if (file) this.ingestSelloutImage(file, file.name || 'ไฟล์ที่เลือก');
+    },
+    onSelloutPaste(e) {
+      const file = fileFromClipboard(e);
+      if (!file) return;
+      e.preventDefault();
+      this.ingestSelloutImage(file, 'วางจากคลิปบอร์ด');
+    },
+    onSelloutDrop(e) {
+      const file = fileFromDataTransfer(e.dataTransfer);
+      if (!file) return;
+      this.ingestSelloutImage(file, file.name || 'ลากวาง');
+    },
+    async ingestSelloutImage(file, label) {
+      if (!file) return;
+      this.selloutFileName = label || file.name || 'รูปจากคลิปบอร์ด';
+      this.selloutErr = '';
+      this.selloutOkMsg = '';
+      this.selloutOcrOk = false;
+      if (this.selloutPreview) { try { URL.revokeObjectURL(this.selloutPreview); } catch {} }
+      this.selloutPreview = URL.createObjectURL(file);
+      this.selloutOcrMsg = 'กำลังอ่านข้อความจากรูป…';
+      try {
+        const Tesseract = await loadTesseract();
+        const result = await Tesseract.recognize(file, 'tha+eng', {
+          logger: m => {
+            if (m && m.status === 'recognizing text' && m.progress != null) {
+              this.selloutOcrMsg = 'กำลังอ่านข้อความจากรูป ' + Math.round(m.progress * 100) + '%';
+            }
+          }
+        });
+        const ocrText = result && result.data && result.data.text;
+        this.selloutOcrText = String(ocrText || '').trim();
+        const parsed = parseOsmsContract(ocrText);
+        if (parsed.name) parsed.name = parsed.name.replace(/^คุณ\s*/, '');
+        if (parsed.name) parsed.name = 'คุณ ' + parsed.name;
+        this.selloutForm = Object.assign(emptySelloutForm(), parsed);
+        const filled = ['name','op','model','installDate','amount','policy'].filter(k => this.selloutForm[k]).length;
+        this.selloutOcrOk = filled >= 2;
+        this.selloutOcrMsg = this.selloutOcrOk
+          ? 'อ่านรูปแล้ว — ตรวจชื่อ/รุ่น/OP ก่อนกดบันทึก'
+          : 'อ่านรูปได้บางส่วน — กรอกช่องที่ว่างเองได้';
+      } catch (err) {
+        this.selloutOcrOk = false;
+        this.selloutOcrMsg = 'อ่านรูปอัตโนมัติไม่ได้ — กรอกมือได้ (' + (err.message || err) + ')';
+      }
+    },
+    async saveSellout() {
+      if (!this.isPondCrm()) { this.selloutErr = 'ลงยอดขายชีตนี้ได้เฉพาะ POND'; return; }
+      const f = this.selloutForm;
+      if (f.name) {
+        f.name = f.name.replace(/^คุณ\s*/, '');
+        f.name = 'คุณ ' + f.name;
+      }
+      if (!(f.name || f.phone || f.op)) { this.selloutErr = 'ต้องมีอย่างน้อย ชื่อ หรือเบอร์ หรือ OP'; return; }
+      this.selloutSaving = true;
+      this.selloutErr = '';
+      this.selloutOkMsg = '';
+      try {
+        const r = await this._writeJsonp({
+          action: 'addSellout',
+          promoter: PROMOTER,
+          name: f.name, phone: f.phone, province: f.province,
+          op: f.op, sellDate: f.sellDate, installDate: f.installDate,
+          category: f.category, model: f.model,
+          quantity: f.quantity, amount: f.amount,
+          policy: f.policy, policyName: f.policy, remark: f.remark
+        });
+        if (r.soft) {
+          this.selloutOkMsg = 'ส่งคำสั่งแล้ว ถ้า Sheet ช้าให้กดโหลดใหม่อีกครั้ง';
+        } else {
+          const d = r.data || {};
+          this.selloutOkMsg = 'บันทึกแล้ว แถว ' + (d.row || '') + (d.no ? ' · No. ' + d.no : '');
+        }
+        this.filterSource = 'Sell out Wuttichai.P';
+        this.fetchData({ soft: true });
+      } catch (e) {
+        this.selloutErr = e.message || String(e);
+      } finally {
+        this.selloutSaving = false;
+      }
     },
     isSelloutFilterActive() {
       return this.filterSource === 'Sell out Wuttichai.P';
@@ -2216,7 +2470,6 @@ function app() {
       };
       return icons[icon] || icons.web;
     },
-
     paymentStyle(val) {
       if (!val) return '';
       const v = val.toLowerCase();
@@ -2561,6 +2814,215 @@ function app() {
       a.click(); URL.revokeObjectURL(url);
     },
   };
+}
+
+function emptySelloutForm() {
+  return {
+    name: '', phone: '', province: '', op: '', sellDate: '', installDate: '',
+    category: '', model: '', quantity: '1', amount: '', policy: '', remark: ''
+  };
+}
+
+function fileFromClipboard(e) {
+  const cd = (e && e.clipboardData) || (window.clipboardData || null);
+  if (!cd) return null;
+  return fileFromDataTransfer(cd);
+}
+
+function fileFromDataTransfer(dt) {
+  if (!dt) return null;
+  if (dt.files && dt.files.length) {
+    for (let i = 0; i < dt.files.length; i++) {
+      if (dt.files[i] && String(dt.files[i].type || '').indexOf('image') === 0) return dt.files[i];
+    }
+  }
+  const items = dt.items;
+  if (items) {
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it && String(it.type || '').indexOf('image') === 0) {
+        const blob = it.getAsFile ? it.getAsFile() : null;
+        if (blob) return blob;
+      }
+    }
+  }
+  return null;
+}
+
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = () => resolve(window.Tesseract);
+    s.onerror = () => reject(new Error('โหลด OCR ไม่ได้'));
+    document.head.appendChild(s);
+  });
+}
+
+const TH_PROVINCES = [
+  'กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท',
+  'ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม',
+  'นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์',
+  'ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์',
+  'แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง',
+  'ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ',
+  'สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย',
+  'หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'
+];
+
+function findThaiProvince(s) {
+  const t = String(s || '');
+  if (!t) return '';
+  if (/กรุงเทพ/.test(t) || /\bBangkok\b/i.test(t)) return 'กรุงเทพมหานคร';
+  let found = '';
+  for (let i = 0; i < TH_PROVINCES.length; i++) {
+    const p = TH_PROVINCES[i];
+    if (p !== 'กรุงเทพมหานคร' && t.indexOf(p) >= 0 && p.length > found.length) found = p;
+  }
+  return found;
+}
+
+function isOsmsOtherFieldLabel(s) {
+  const v = String(s || '').replace(/\s+/g, ' ').trim();
+  if (!v) return true;
+  return /^(นโยบายการกำหนด(?:ราคา)?|ราคา|Pricing Policy|Price Policy|Policy Name|Policy|Rental Fee(?: Total)?|ค่าเช่า|จำนวน(?:เงิน)?|Quantity|ชื่อโปร|หมวดหมู่|Subscription|สถานะ)$/i.test(v);
+}
+
+function policyTextAfterLabel(s) {
+  let v = String(s || '').replace(/\s+/g, ' ').trim();
+  if (!v) return '';
+  const lead = /^(Pricing Policy|Price Policy|Policy Name|Policy|Rental Fee(?: Total)?|ค่าเช่า(?:รวม|ทั้งหมด)?)\s*[:：\-]*/i;
+  for (let n = 0; n < 8; n++) {
+    const next = v.replace(lead, '').trim();
+    if (next === v) break;
+    v = next;
+  }
+  v = v.replace(/\s+Rental Fee(?: Total)?\s+/ig, ' ').replace(/\s+ค่าเช่า(?:รวม|ทั้งหมด)?\s+/g, ' ').trim();
+  v = v.replace(/\s+\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*$/, '').trim();
+  const code = v.match(/(\[[^\]]+\][A-Za-z0-9_().]+|(?:VISIT|SELF|NOSERVICE|SUBSCRIBE)[A-Za-z0-9_().]+)/i);
+  if (code) return code[1].replace(/\s+/g, '');
+  if (isOsmsOtherFieldLabel(v) || /^ราคา$/i.test(v)) return '';
+  if (/_/.test(v) || /\[/.test(v) || /\(/.test(v)) v = v.replace(/\s+/g, '');
+  return v;
+}
+
+function grabOsmsPolicy(text) {
+  const raw = String(text || '');
+  const lines = raw.split(/\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const labelRe = /นโยบายการกำหนด(?:ราคา)?|กำหนดราคา|Pricing Policy|Price Policy|Policy Name/;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(labelRe);
+    if (!m) continue;
+    const same = lines[i].slice(m.index + m[0].length).replace(/^[\s:：\-]+/, '');
+    const cands = [same, lines[i + 1] || '', lines[i + 2] || '', lines[i + 3] || ''];
+    for (let c = 0; c < cands.length; c++) {
+      const v = policyTextAfterLabel(cands[c]);
+      if (v) return v;
+    }
+  }
+  const blob = raw.replace(/\s+/g, ' ');
+  const m2 = blob.match(/นโยบายการกำหนด(?:ราคา)?|กำหนดราคา|Pricing Policy|Price Policy|Policy Name/);
+  if (m2) {
+    let rest = blob.slice(m2.index + m2[0].length);
+    rest = rest.replace(/^(?:\s|[:：\-]|Pricing Policy|Price Policy|Policy Name|Policy|Rental Fee(?: Total)?|ค่าเช่า)+/ig, ' ').trim();
+    const tok = rest.match(/(\[[^\]]+\][A-Za-z0-9_().]+|[A-Z][A-Z0-9_().]{7,})/);
+    if (tok) return tok[1].replace(/\s+/g, '');
+    const v = policyTextAfterLabel(rest.split(/\s{2,}/)[0] || '');
+    if (v) return v;
+  }
+  return '';
+}
+
+function grabRentalFeeTotal(text) {
+  const lines = String(text || '').split(/\n/);
+  const moneyRe = /(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{3,6}(?:\.\d+)?)/g;
+  for (let i = 0; i < lines.length; i++) {
+    if (!/Rental Fee Total|ค่าเช่า/i.test(lines[i])) continue;
+    const same = lines[i].match(/Rental Fee Total[^\d\n]{0,12}(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{2,6}(?:\.\d+)?)/i)
+      || lines[i].match(/ค่าเช่า(?:รวม|ทั้งหมด|Total)?[^\d\n]{0,12}(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{2,6}(?:\.\d+)?)/);
+    if (same) return same[1];
+    const nxt = lines[i + 1] || '';
+    const endAmt = nxt.match(/ (\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{2,6}(?:\.\d+)?)\s*$/);
+    if (endAmt) return endAmt[1];
+    const all = [];
+    nxt.replace(moneyRe, (m) => { all.push(m); return m; });
+    if (all.length) return all[all.length - 1];
+  }
+  const m = String(text || '').match(/Rental Fee[^\n\d]{0,12}(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{2,6}(?:\.\d+)?)/i);
+  return m ? m[1] : '';
+}
+
+function parseOsmsContract(raw) {
+  const text = String(raw || '').replace(/\u00a0/g, ' ').replace(/\r/g, '\n');
+  const grab = (re) => {
+    const m = text.match(re);
+    if (!m) return '';
+    return String(m[1] != null ? m[1] : m[0]).replace(/\s+/g, ' ').trim();
+  };
+  const after = (labelRe, stopRe) => {
+    const m = text.match(labelRe);
+    if (!m) return '';
+    let rest = text.slice(m.index + m[0].length).replace(/^[\s:：\-]+/, '');
+    const stop = rest.search(stopRe || /\n/);
+    rest = (stop >= 0 ? rest.slice(0, stop) : rest.split('\n')[0] || '');
+    return rest.replace(/\s+/g, ' ').trim();
+  };
+  const cu = grab(/\bCU\d{6,}\b/i);
+  const ct = grab(/\bCT\d{10,}\b/i);
+  const install = grab(/วันที่ติดตั้ง[^\d]{0,12}(\d{1,2}\/\d{1,2}\/\d{4})/)
+    || grab(/\b(\d{2}\/\d{2}\/20\d{2})\b/);
+  let sellDate = '';
+  const ctDate = (ct.match(/^CT(\d{2})(\d{2})(\d{2})/) || []);
+  if (ctDate.length) sellDate = ctDate[3] + '/' + ctDate[2] + '/20' + ctDate[1];
+  let name = after(/ชื่อลูกค้า/, /ประเภทลูกค้า|Individual|ที่อยู่|บันทึก/);
+  name = name.replace(/บันทึก/g, '').replace(/\bIndividual\b/ig, '').trim();
+  const addr = after(/ที่อยู่สำหรับติดตั้ง|ที่อยู่/, /หมวดหมู่|Subscription|สถานะ|นโยบาย|Policy|Rental Fee/);
+  const provinceField = after(/จังหวัด|\bProvince\b/, /รหัสไปรษณีย์|ประเทศ|หมวดหมู่|Subscription|สถานะ|นโยบาย|Policy|โทร|เบอร์/);
+  let province = findThaiProvince(provinceField) || findThaiProvince(addr) || findThaiProvince(text);
+  if (!province) {
+    const pv = (provinceField || addr).match(/(?:จังหวัด|จ\.)\s*([\u0E00-\u0E7F]{2,30})/);
+    if (pv) province = pv[1].replace(/[0-9].*$/, '').trim();
+  }
+  const itemRaw = grab(/BOUNCE[^\n]+/i)
+    || after(/(?:^|\n)\s*รายการ\s+/, /วันที่|ระยะเวลา|60Month/)
+    || after(/ประเภทรายการ/, /รายการ|วันที่|BOUNCE/);
+  let model = (itemRaw || '').replace(/_OS\b/g, '').replace(/\s+/g, ' ').trim();
+  const typeRaw = after(/ประเภทรายการ/, /รายการ|วันที่|BOUNCE/)
+    || grab(/Home Audio[^\n]*/i)
+    || grab(/Wireless Speaker[^\n]*/i);
+  const category = mapOsmsCategory(typeRaw + ' ' + model);
+  const policy = grabOsmsPolicy(text);
+  const amountRaw = grabRentalFeeTotal(text);
+  const amount = String(amountRaw || '').replace(/,/g, '');
+  return {
+    name, phone: '', province, op: ct || cu,
+    sellDate, installDate: install,
+    category, model,
+    quantity: '1', amount,
+    policy,
+    remark: ''
+  };
+}
+
+function mapOsmsCategory(s) {
+  const u = String(s || '').toUpperCase();
+  const raw = String(s || '').replace(/_OS/g, '').trim();
+  if (/STANBY|STANDBY|LIFE\s*STYLE|LIFESTYLE|27LX|สแตนบาย/.test(u)) return 'สแตนบายมี';
+  if (/\bMNT\b|MONITOR|มอนิเตอร์|จอมอนิเตอร์/.test(u)) return 'จอมอนิเตอร์';
+  if (/FREEZER|ตู้แช่แข็ง/.test(u)) return 'ตู้แช่แข็ง';
+  if (/\bAV\b|SOUND\s*BAR|SPEAKER|HOME AUDIO|XBOOM|BOUNCE|ซาวด์บาร์|ลำโพง/.test(u)) return 'ซาวด์บาร์ลำโพง';
+  if (/\bACC\b|VACUUM|A9T|ดูดฝุ่น/.test(u)) return 'เครื่องดูดฝุ่น';
+  if (/DEHUMID|ลดความชื้น/.test(u)) return 'เครื่องลดความชื้น';
+  if (/\bAP\b|PURIFIER|ฟอกอากาศ|เครื่องฟอก|AEROHIT|AEROMINI/.test(u)) return 'เครื่องฟอก';
+  if (/\bMWO\b|MICROWAVE|ไมโครเวฟ/.test(u)) return 'ไมโครเวฟ';
+  if (/\bWP\b|WATER|กรองน้ำ/.test(u)) return 'เครื่องกรองน้ำ';
+  if (/\bRAC\b|แอร์ติดผนัง|ARTCOOL/.test(u)) return 'แอร์ติดผนัง';
+  if (/STYLER|ตู้ถนอมผ้า/.test(u)) return 'ตู้ถนอมผ้า';
+  if (/\bWM\b|WASHER|WASH|ซักผ้า/.test(u)) return 'เครื่องซักผ้า';
+  if (/\bREF\b|REFRIGERATOR|ตู้เย็น|MULTI-?DOOR|SIDE.?BY.?SIDE/.test(u)) return 'ตู้เย็น';
+  if (/\bTV\b|OLED|QNED|NANO|ทีวี|โทรทัศน์/.test(u)) return 'ทีวี';
+  return raw;
 }
 
 function jsonpCall(baseUrl, params={}, timeout=30000) {
